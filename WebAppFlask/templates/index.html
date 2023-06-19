@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <title>Керування розумним будинком</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body onload="updateData(); setInterval(updateData, 5000);">
+    <div class="flex justify-center">
+    <div class="bg-white shadow-lg rounded-lg p-8 m-4 w-full lg:w-4/6">
+        <div style="display: flex; justify-content: center;">
+            <div class="pr-5">
+                <div style="position: relative; width: 600px; height: 600px;">
+                    <div id="kitchen"
+                         style="position: absolute; top: 0; left: 0; width: 100%; height: 30%; border: 5px solid #00000033; background: #ffff0000">
+                        <h3 style="position: absolute; bottom: 5px; left: 5px; color: #000000;">Кухня</h3>
+                    </div>
+
+                    <div id="livingRoom"
+                         style="position: absolute; top: 30%; left: 0; width: 60%; height: 70%; border: 5px solid #00000033; background: #ffff0000">
+                        <h3 style="position: absolute; bottom: 5px; left: 5px; color: #000000;">Вітальня</h3>
+                    </div>
+
+                    <div id="toilet"
+                         style="position: absolute; top: 30%; left: 60%; width: 40%; height: 20%; border: 5px solid #00000033; background: #ffff0000">
+                        <h3 style="position: absolute; bottom: 5px; left: 5px; color: #000000;">Туалет</h3>
+                    </div>
+                    <div id="room1"
+                         style="position: absolute; top: 50%; left: 60%; width: 40%; height: 25%; border: 5px solid #00000033; background: #ffff0000">
+                        <h3 style="position: absolute; bottom: 5px; left: 5px; color: #000000;">Кімната 1</h3>
+                    </div>
+                    <div id="room2"
+                         style="position: absolute; top: 75%; left: 60%; width: 40%; height: 25%; border: 5px solid #00000033; background: #ffff0000">
+                        <h3 style="position: absolute; bottom: 5px; left: 5px; color: #000000;">Кімната 2</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex flex-col items-start">
+                <form name="myForm" action="" method="post" id="test" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                    <div class="relative w-15 mr-2 align-middle select-none">
+                        <label for="toggle"
+                               class="w-20 inline-block text-l font-semibold">Кухня</label>
+                        <input type="checkbox" name="kitchen" onchange="toggleLight('kitchen')"
+                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"/>
+                    </div>
+
+                    <div class="relative w-15 mr-2 align-middle select-none">
+                        <label for="toggle"
+                               class="w-20 inline-block text-l font-semibold">Вітальня</label>
+                        <input type="checkbox" name="livingRoom" onchange="toggleLight('livingRoom')"
+                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"/>
+                    </div>
+
+                    <div class="relative w-15 mr-2 align-middle select-none">
+                        <label for="toggle"
+                               class="w-20 inline-block text-l font-semibold">Туалет</label>
+                        <input type="checkbox" name="toilet" onchange="toggleLight('toilet')"
+                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"/>
+                    </div>
+
+                    <div class="relative w-15 mr-2 align-middle select-none">
+                        <label for="toggle"
+                               class="w-20 inline-block text-l font-semibold">Кімната 1</label>
+                        <input type="checkbox" name="room1" onchange="toggleLight('room1')" id="room1_status"
+                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"/>
+                    </div>
+
+                    <div class="relative w-15 mr-2 align-middle select-none">
+                        <label for="toggle"
+                               class="w-20 inline-block text-l font-semibold">Кімната 2</label>
+                        <input value="0" type="range" name="room2" min="0" max="1" step="0.01" onchange="setOpacity('room2')"
+                           class="slider"/>
+                    </div>
+
+                </form>
+            </div>
+
+                <form class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                     <div>
+                        <h3>Температура: <b id="temp"></b> °C </h3>
+                    </div>
+                </form>
+            </div>
+
+
+        </div>
+
+        <script>
+            function toggleLight(room, update=true) {
+                let roomDiv = document.getElementById(room);
+                let checkbox = document.querySelector(`input[name="${room}"]`);
+                let status = checkbox.checked ? 'on' : 'off';  // Get status directly from checkbox
+
+                if (checkbox.checked) {
+                    roomDiv.style.background = '#FFFF00'; // Change color to represent light on
+                } else {
+                    roomDiv.style.background = "#ffff0000"; // Change color to represent light off
+                }
+
+                // prepare data to be sent to the server
+                let data = {
+                    room: room,
+                    status: status  // Use the status variable directly
+                };
+
+                // send data to the server
+                if(update){
+                    fetch('http://127.0.0.1:5000/updateData', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data),
+                    });
+                }
+            }
+
+            function setOpacity(room, update=true) {
+                let roomDiv = document.getElementById(room);
+                let rangeInput = document.querySelector(`input[name="${room}"]`);
+
+                console.log(rangeInput.value)
+                roomDiv.style.background = `rgba(255,255,0,${rangeInput.value})`; // Change opacity to represent dimmer level
+
+                // prepare data to be sent to the server
+                let data = {
+                    room: room,
+                    status: rangeInput.value  // Use the status variable directly
+                };
+
+                // send data to the server
+                if(update){
+                    fetch('http://127.0.0.1:5000/updateData', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data),
+                    });
+                }
+            }
+
+            function updateData() {
+                fetch('http://127.0.0.1:5000/getInfo', {
+                    method: 'GET',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    let checkbox = document.querySelector(`input[name="room1"]`);
+                    let status = checkbox.checked ? 'on' : 'off';
+
+                    if (status !== data.room1) {
+                        checkbox.checked = !checkbox.checked;
+                        toggleLight('room1', false);
+                    }
+
+                    checkbox = document.querySelector(`input[name="kitchen"]`);
+                    status = checkbox.checked ? 'on' : 'off';
+                    if (status !== data.kitchen) {
+                        checkbox.checked = !checkbox.checked;
+                        toggleLight('kitchen', false);
+                    }
+
+                    checkbox = document.querySelector(`input[name="livingRoom"]`);
+                    status = checkbox.checked ? 'on' : 'off';
+                    if (status !== data.livingRoom) {
+                        checkbox.checked = !checkbox.checked;
+                        toggleLight('livingRoom', false);
+                    }
+
+                    checkbox = document.querySelector(`input[name="toilet"]`);
+                    status = checkbox.checked ? 'on' : 'off';
+                    if (status !== data.toilet) {
+                        checkbox.checked = !checkbox.checked;
+                        toggleLight('toilet', false);
+                    }
+
+                    let slider = document.querySelector(`input[name="room2"]`);
+                    slider.value = data.room2;
+                    setOpacity('room2', false);
+
+                    let temp = document.getElementById("temp");
+                    temp.textContent = data.temperature;
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+            }
+        </script>
+    </div>
+</div>
+</body>
+</html>

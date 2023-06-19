@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <title>Керування розумним будинком</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body onload="updateChart(); setInterval(updateChart, 5000);">
+    <div style="display: flex; justify-content: center; margin: 0;">
+        <div class="m-0 container mx-auto my-10" style="width:600px; height:400px;">
+            <canvas id="myChart"></canvas>
+        </div>
+        <div class="flex justify-center flex-col">
+            <form action="">
+                <div class="relative w-15 mr-2 align-middle select-none">
+                    <label for="toggle"
+                           class="w-20 inline-block text-l font-semibold">Max</label>
+                    <input value="0" type="text" name="max_temp" min="15" max="35" step="0.01"
+                           class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
+                    <button onclick="setOpacity('max_temp')">Send</button>
+                </div>
+
+                <div class="relative w-15 mr-2 align-middle select-none">
+                    <label for="toggle"
+                           class="w-20 inline-block text-l font-semibold">Min</label>
+                    <input value="0" type="text" name="min_temp" min="-10" max="35" step="0.01"
+                           class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
+                    <button onclick="setOpacity('min_temp')">Send</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let chart = null
+
+        function updateChart() {
+            fetch('http://127.0.0.1:5000/GetTemperatures', {
+                method: 'GET',
+            })
+            .then(response => response.json())
+            .then(data => {
+                let ctx = document.getElementById('myChart').getContext('2d');
+                let min = document.getElementsByName('min_temp')[0];
+                let max = document.getElementsByName('max_temp')[0];
+
+                min.value = data[data.length-1].min
+                max.value = data[data.length-1].max
+
+                if(chart !== null) {
+                    chart.destroy()
+                }
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.map((_, i) => i + 1),
+                        datasets: [
+                            {
+                                label: 'Max',
+                                data: data.map(d => d.max),
+                                fill: false,
+                                borderColor: 'rgb(255, 99, 132)',
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Min',
+                                data: data.map(d => d.min),
+                                fill: false,
+                                borderColor: 'rgb(54, 162, 235)',
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Value',
+                                data: data.map(d => d.value),
+                                fill: false,
+                                borderColor: 'rgb(75, 192, 192)',
+                                tension: 0.1
+                            }
+                        ]
+                    },
+                    options: {
+                        animation: {
+                            duration: 0 // general animation time
+                        },
+                        responsiveAnimationDuration: 0 // animation duration after a resize
+                    }
+                });
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        function setOpacity(val, update=true) {
+            let rangeInput = document.querySelector(`input[name="${val}"]`);
+            let data = {
+                room: val,
+                status: rangeInput.value
+            };
+
+            if(update){
+                fetch('http://127.0.0.1:5000/updateData', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+            }
+        }
+    </script>
+</body>
+</html>
