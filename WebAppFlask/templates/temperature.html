@@ -7,49 +7,49 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body onload="updateChart(); setInterval(updateChart, 5000);">
-    <div style="display: flex; justify-content: center; margin: 0;">
-        <div class="m-0 container mx-auto my-10" style="width:600px; height:400px;">
-            <canvas id="myChart"></canvas>
-        </div>
-        <div class="flex justify-center flex-col">
-            <form action="">
-                <div class="relative w-15 mr-2 align-middle select-none">
-                    <label for="toggle"
-                           class="w-20 inline-block text-l font-semibold">Max</label>
-                    <input value="0" type="text" name="max_temp" min="15" max="35" step="0.01"
-                           class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
-                    <button onclick="setOpacity('max_temp')">Send</button>
-                </div>
-
-                <div class="relative w-15 mr-2 align-middle select-none">
-                    <label for="toggle"
-                           class="w-20 inline-block text-l font-semibold">Min</label>
-                    <input value="0" type="text" name="min_temp" min="-10" max="35" step="0.01"
-                           class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
-                    <button onclick="setOpacity('min_temp')">Send</button>
-                </div>
-            </form>
-        </div>
+<div style="display: flex; justify-content: center; margin: 0;">
+    <div class="m-0 container mx-auto my-10" style="width:600px; height:400px;">
+        <canvas id="myChart"></canvas>
     </div>
+    <div class="flex justify-center flex-col">
+        <div class="relative w-15 mr-2 align-middle select-none">
+            <label for="min_temp"
+                   class="w-20 inline-block text-l font-semibold">Min</label>
+            <input id="min_temp" type="range" min="0" max="49.5" step="0.01"
+                   class="slider bg-blue-400 w-full h-2 rounded-full"/>
+        </div>
 
-    <script>
-        let chart = null
+        <div class="relative w-15 mr-2 align-middle select-none">
+            <label for="max_temp"
+                   class="w-20 inline-block text-l font-semibold">Max</label>
+            <input id="max_temp" type="range" min="0.5" max="50" step="0.01"
+                   class="slider bg-red-400 w-full h-2 rounded-full"/>
+        </div>
 
-        function updateChart() {
-            fetch('http://127.0.0.1:5000/GetTemperatures', {
-                method: 'GET',
-            })
+        <button id="submit_button" class="btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Submit
+        </button>
+    </div>
+</div>
+
+<script>
+    let chart = null;
+
+    function updateChart() {
+        fetch('http://127.0.0.1:5000/GetTemperatures', {
+            method: 'GET',
+        })
             .then(response => response.json())
             .then(data => {
                 let ctx = document.getElementById('myChart').getContext('2d');
-                let min = document.getElementsByName('min_temp')[0];
-                let max = document.getElementsByName('max_temp')[0];
+                let minTempSlider = document.getElementById('min_temp');
+                let maxTempSlider = document.getElementById('max_temp');
 
-                min.value = data[data.length-1].min
-                max.value = data[data.length-1].max
+                minTempSlider.value = data[data.length - 1].min;
+                maxTempSlider.value = data[data.length - 1].max;
 
-                if(chart !== null) {
-                    chart.destroy()
+                if (chart !== null) {
+                    chart.destroy();
                 }
                 chart = new Chart(ctx, {
                     type: 'line',
@@ -90,25 +90,57 @@
             .catch((error) => {
                 console.error('Error:', error);
             });
-        }
+    }
 
-        function setOpacity(val, update=true) {
-            let rangeInput = document.querySelector(`input[name="${val}"]`);
+    const submitButton = document.querySelector('#submit_button');
+
+    submitButton.addEventListener('click', function () {
+        let minTempSlider = document.getElementById('min_temp');
+        let maxTempSlider = document.getElementById('max_temp');
+
+        if (parseFloat(minTempSlider.value) > parseFloat(maxTempSlider.value)) {
+            alert("Minimum temperature cannot be greater than maximum temperature.");
+            minTempSlider.value = maxTempSlider.value;
+        } else if (parseFloat(maxTempSlider.value) < parseFloat(minTempSlider.value)) {
+            alert("Maximum temperature cannot be less than minimum temperature.");
+            maxTempSlider.value = minTempSlider.value;
+        } else {
             let data = {
-                room: val,
-                status: rangeInput.value
+                min_temp: minTempSlider.value,
+                max_temp: maxTempSlider.value
             };
 
-            if(update){
-                fetch('http://127.0.0.1:5000/updateData', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data),
-                });
-            }
+            fetch('http://127.0.0.1:5000/updateTemp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
         }
-    </script>
+    });
+
+    const minTempSlider=document.querySelector('#min_temp');
+    const maxTempSlider=document.querySelector('#max_temp');
+
+    // set event listener
+    minTempSlider.addEventListener('input', function () {
+        if (parseFloat(minTempSlider.value) >= parseFloat(maxTempSlider.value)) {
+            minTempSlider.value=parseFloat(maxTempSlider.value) - 0.5;
+            minTempSlider.classList.add('bg-gray-500');
+        } else {
+            minTempSlider.classList.remove('bg-gray-500');
+        }
+    });
+
+    maxTempSlider.addEventListener('input', function () {
+        if (parseFloat(maxTempSlider.value) <= parseFloat(minTempSlider.value)) {
+            maxTempSlider.value=parseFloat(minTempSlider.value) + 0.5;
+            maxTempSlider.classList.add('bg-gray-500');
+        } else {
+            maxTempSlider.classList.remove('bg-gray-500');
+        }
+    });
+</script>
 </body>
 </html>

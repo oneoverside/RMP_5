@@ -64,18 +64,9 @@ class Context:
             return list
         return []
 
-    def update_min(self, status):
+    def update_min_and_max(self, min, max):
         lastTemp = Temperature.query.order_by(Temperature.date).first()
-        newTemp = Temperature(id=uuid.uuid4(), min_temperature=float(status), date=datetime.now(), max_temperature=lastTemp.max_temperature, temperature=lastTemp.temperature)
-
-        self.db.session.add(newTemp)
-        self.db.session.commit()
-
-    def update_max(self, status):
-
-        lastTemp = Temperature.query.order_by(Temperature.date).first()
-        newTemp = Temperature(id=uuid.uuid4(), min_temperature=lastTemp.min_temperature, date=datetime.now(), max_temperature=float(status), temperature=lastTemp.temperature)
-
+        newTemp = Temperature(id=uuid.uuid4(), min_temperature=float(min), date=datetime.now(), max_temperature=float(max), temperature=lastTemp.temperature)
         self.db.session.add(newTemp)
         self.db.session.commit()
 
@@ -153,11 +144,14 @@ def log():
         roomControl.livingRoom = status
     if room_name == 'toilet':
         roomControl.toilet = status
-    if room_name == 'min_temp' or room_name == 'min':
-        context.update_min(status)
-    if room_name == 'max_temp' or room_name == 'max':
-        context.update_max(status)
 
     print(f"{room_name} lightStatus: {status}")
 
+    return jsonify({'success': True}), 200
+
+
+@app.route('/updateTemp', methods=['POST'])
+def updateTemp():
+    data = request.get_json()
+    context.update_min_and_max(data.get('min_temp'), data.get('max_temp'))
     return jsonify({'success': True}), 200
